@@ -50,27 +50,26 @@ def get_max_action_util(state,age_, mdp,U):
     for i, a_ in enumerate(mdp.A):
         total = 0
         for s in mdp.S:
-            p = float(mdp.transitions.query("health == @state & action == @a_ & age == @age_ ")[s])
+            p = mdp.transitions.query("health == @state & action == @a_ & age == @age_ ")[s]
             u = U[s]
             total += u * p
         u_per_action[i] = total
-    return max(u_per_action)
+    return max(max(u_per_action),0)
 
 def get_best_action(state, age_,mdp,U):
     u_per_action = np.zeros(len(mdp.A))
     for i, a_ in enumerate(mdp.A):
         total = 0
         for s in mdp.S:
-            p = float(mdp.transitions.query("health == @state & action == @a_ & age == @age_ ")[s])
+            p = mdp.transitions.query("health == @state & action == @a_ & age == @age_ ")[s]
             u = U[s]
             total += u * p
         u_per_action[i] = total
     return mdp.A[np.argmax(u_per_action)]
 
 
-def prob1(age = 30, discount = .9):
+def prob1(age = 30, discount = .7):
     data = pd.read_csv('transition1.csv')
-    # Define states, actions by slicing 'health', 'actions'
     states = data.health.unique()
     actions = data.action.unique()
     def reward(state):
@@ -87,5 +86,20 @@ def prob1(age = 30, discount = .9):
     print('for discount:', discount)
     return {u:a for u,a in zip(utilities.keys(), [get_best_action(s,age,mdp,utilities) for s in mdp.S]) }
 
-def prob2():
-    data = pd.read_csv('transition2.csv')
+def prob2(file = 'transition2.csv',age = 30, discount = .7):
+    data = pd.read_csv(file)
+    states=  data.health.unique()
+    actions = data.action.unique()
+    def reward(state):
+        if state == "Dead":
+            return -100
+        if state == 'noAAA':
+            return 100 - age
+        return .9 * (100 - age)
+
+    # Build the transition matrix using slices of the data
+    mdp = MDP(states, actions, data, reward, discount)
+    utilities = value_iteration(mdp, age, 1)
+    print('for age:', age)
+    print('for discount:', discount)
+    return {u:a for u,a in zip(utilities.keys(), [get_best_action(s,age,mdp,utilities) for s in mdp.S]) }
