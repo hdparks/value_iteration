@@ -26,14 +26,14 @@ def value_iteration(mdp, age, epsilon):
 
     # Initial utility map sends all states to 0
     U = {s:0 for s in mdp.S}
-    delta = 0
+    delta = np.inf
     U_next = U.copy()
     while(True):
         for state in mdp.S:
 
             U_next[state] = mdp.R(state) + mdp.discount * get_neighbor_util(state,age,mdp,U)
 
-            if abs(U_next[state] - U[state]) > delta:
+            if abs(U_next[state] - U[state]) < delta:
                 delta = abs(U_next[state] - U[state])
 
         print(delta)
@@ -46,12 +46,14 @@ def value_iteration(mdp, age, epsilon):
     return U
 
 def get_neighbor_util(state,age_, mdp,U):
+
     u_per_action = np.zeros(len(mdp.A))
     for i, a_ in enumerate(mdp.A):
         total = 0
         for s in mdp.S:
-            u = U[s] * float(mdp.transitions.query("health == @s & action == @a_ & age == @age_ ")[state])
-            total += u
+            p = float(mdp.transitions.query("health == @state & action == @a_ & age == @age_ ")[s])
+            u = U[s]
+            total += u * p
         u_per_action[i] = total
     return max(u_per_action)
 
@@ -63,7 +65,6 @@ def prob1():
     age = 30
     def reward(state):
         if state == "Dead":
-            print("YoU DeAd")
             return -100
         if state == 'noAAA':
             return 100 - age
