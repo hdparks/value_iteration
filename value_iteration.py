@@ -65,6 +65,7 @@ def get_best_action(state, age_,mdp,U):
             u = U[s]
             total += u * p
         u_per_action[i] = total
+        print(u_per_action,mdp.A)
     return mdp.A[np.argmax(u_per_action)]
 
 
