@@ -29,19 +29,23 @@ def value_iteration(mdp, age, epsilon):
     delta = np.inf
     U_next = U.copy()
     while(True):
+        U = U_next.copy()
+        delta = 0
         for state in mdp.S:
 
             U_next[state] = mdp.R(state) + mdp.discount * get_neighbor_util(state,age,mdp,U)
 
-            if abs(U_next[state] - U[state]) < delta:
+            if abs(U_next[state] - U[state]) > delta:
                 delta = abs(U_next[state] - U[state])
+                print(delta)
 
-        print(delta)
-        print(U)
-        U = U_next
+
         if delta < epsilon * (1 - mdp.discount) / mdp.discount:
             break
 
+        print(delta)
+        for a,b in zip(U.keys(),U.values()):
+            print(a,b)
 
     return U
 
