@@ -32,24 +32,19 @@ def value_iteration(mdp, age, epsilon):
         U = U_next.copy()
         delta = 0
         for state in mdp.S:
-
-            U_next[state] = mdp.R(state) + mdp.discount * get_neighbor_util(state,age,mdp,U)
+            U_next[state] = mdp.R(state) + mdp.discount * get_max_action_util(state,age,mdp,U)
 
             if abs(U_next[state] - U[state]) > delta:
                 delta = abs(U_next[state] - U[state])
-                print(delta)
 
-
-        if delta < epsilon * (1 - mdp.discount) / mdp.discount:
+        if delta < epsilon:
             break
 
-        print(delta)
-        for a,b in zip(U.keys(),U.values()):
-            print(a,b)
+        print('delta:',delta)
 
     return U
 
-def get_neighbor_util(state,age_, mdp,U):
+def get_max_action_util(state,age_, mdp,U):
 
     u_per_action = np.zeros(len(mdp.A))
     for i, a_ in enumerate(mdp.A):
@@ -61,12 +56,23 @@ def get_neighbor_util(state,age_, mdp,U):
         u_per_action[i] = total
     return max(u_per_action)
 
-def prob1():
+def get_best_action(state, age_,mdp,U):
+    u_per_action = np.zeros(len(mdp.A))
+    for i, a_ in enumerate(mdp.A):
+        total = 0
+        for s in mdp.S:
+            p = float(mdp.transitions.query("health == @state & action == @a_ & age == @age_ ")[s])
+            u = U[s]
+            total += u * p
+        u_per_action[i] = total
+    return mdp.A[np.argmax(u_per_action)]
+
+
+def prob1(age = 30, discount = .9):
     data = pd.read_csv('transition1.csv')
     # Define states, actions by slicing 'health', 'actions'
     states = data.health.unique()
     actions = data.action.unique()
-    age = 30
     def reward(state):
         if state == "Dead":
             return -100
@@ -75,5 +81,11 @@ def prob1():
         return .9 * (100 - age)
 
     # Build the transition matrix using slices of the data
-    mdp = MDP(states, actions, data, reward, .9)
-    return value_iteration(mdp, age, .1)
+    mdp = MDP(states, actions, data, reward, discount)
+    utilities = value_iteration(mdp, age, 1)
+    print('for age:', age)
+    print('for discount:', discount)
+    return {u:a for u,a in zip(utilities.keys(), [get_best_action(s,age,mdp,utilities) for s in mdp.S]) }
+
+def prob2():
+    data = pd.read_csv('transition2.csv')
